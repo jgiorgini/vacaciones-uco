@@ -15,10 +15,9 @@ const ANIO_FINAL = ANIO_INICIAL + 1;
 let dragVacId = null;
 
 // EmailJS (se activa cuando completes datos y pongas EMAILJS_ENABLED = true)
-const EMAILJS_ENABLED = false; // ⚠️ cambiar a true cuando configures EmailJS
-const EMAILJS_SERVICE_ID = "TU_SERVICE_ID";
-const EMAILJS_TEMPLATE_ID = "TU_TEMPLATE_ID";
-
+const EMAILJS_ENABLED = true; // ⚠️ cambiar a true cuando configures EmailJS
+const EMAILJS_SERVICE_ID = "service_lo_que_te_dio_emailjs";
+const EMAILJS_TEMPLATE_ID = "template_lo_que_te_dio_emailjs";
 // =============================
 //       UTILIDADES
 // =============================
@@ -957,7 +956,7 @@ function enviarNotificacionAlCoordinador(vacacion) {
         console.error("EmailJS error:", err);
       });
   } else {
-    // fallback: solo consola
+    // Fallback: solo consola
     console.log(
       `Notificar a ${email}: nueva solicitud de ${vacacion.nombre} (${vacacion.legajo}) del ${formatDMY(
         vacacion.inicio
@@ -965,6 +964,7 @@ function enviarNotificacionAlCoordinador(vacacion) {
     );
   }
 }
+
 
 // =============================
 //   MODO OSCURO
@@ -1002,3 +1002,4 @@ window.addEventListener("DOMContentLoaded", () => {
   // si querés que arranque ya con un modo:
   // setMode('colaborador');
 });
+
