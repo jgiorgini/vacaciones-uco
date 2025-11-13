@@ -23,7 +23,7 @@ body {
   color: var(--text-main);
 }
 
-/* Modo oscuro: cambiamos variables */
+/* Modo oscuro */
 body.dark {
   --bg: #020617;
   --panel-bg: #020617;
@@ -62,6 +62,7 @@ body.dark {
   padding: 6px 14px;
   border-radius: 999px;
   font-size: 0.85rem;
+  cursor: pointer;
 }
 
 .btn-ghost:hover {
@@ -345,14 +346,13 @@ th {
 
 .footer-logos {
   display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  align-items: center;
+  justify-content: center;
+  padding-top: 4px;
 }
 
-.logo-ha,
-.logo-jci {
-  height: 36px;
+.logo-banner {
+  max-width: 100%;
+  max-height: 80px;
   object-fit: contain;
 }
 
