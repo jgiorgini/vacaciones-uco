@@ -49,6 +49,15 @@ button:hover {
   background: #004c99;
 }
 
+.btn-secundario {
+  background: #6b7280;
+  margin-bottom: 8px;
+}
+
+.btn-secundario:hover {
+  background: #4b5563;
+}
+
 .form-grid {
   display: grid;
   grid-template-columns: 1fr 2fr;
@@ -141,6 +150,14 @@ th {
   flex: 1.5;
 }
 
+.panel-secundario {
+  margin-top: 8px;
+  padding: 10px;
+  border-radius: 8px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+}
+
 /* Panel de semanas */
 
 .semanas-grid {
@@ -155,7 +172,7 @@ th {
   padding: 6px;
   font-size: 0.8rem;
   background: #f9fafb;
-  min-width: 120px;
+  min-width: 130px;
 }
 
 .semana-ocupada {
@@ -178,6 +195,12 @@ th {
 .ayuda-dnd {
   font-size: 0.75rem;
   color: #6b7280;
+  margin-top: 6px;
+}
+
+.aviso-otros-anios {
+  font-size: 0.8rem;
+  color: #92400e;
   margin-top: 6px;
 }
 
