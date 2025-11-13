@@ -63,6 +63,18 @@
       <label for="emailCoordinador">Correo para notificaciones</label>
       <input id="emailCoordinador" type="email" onchange="guardarEmailCoordinador()" />
     </div>
+    <h3>Seguridad</h3>
+    <div class="form-grid">
+      <label>Clave actual</label>
+      <input id="claveActual" type="password" />
+
+      <label>Nueva clave</label>
+      <input id="claveNueva" type="password" />
+
+      <label>Repetir nueva clave</label>
+      <input id="claveNueva2" type="password" />
+    </div>
+    <button onclick="cambiarClaveCoordinador()">Cambiar clave</button>
 
     <h3>Vacaciones registradas</h3>
     <div class="year-selector">
@@ -75,3 +87,4 @@
   <script src="app.js"></script>
 </body>
 </html>
+
