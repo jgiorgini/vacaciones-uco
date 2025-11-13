@@ -2,7 +2,6 @@
 //   CONFIGURACIÓN BÁSICA
 // =============================
 
-// Claves de LocalStorage
 const LS_VACACIONES = "uci_vacaciones";
 const LS_EMAIL_COORDINADOR = "uci_email_coordinador";
 const LS_CLAVE_COORDINADOR = "uci_clave_coordinador";
@@ -35,6 +34,15 @@ function parseDate(str) {
 
 function formatoISO(date) {
   return date.toISOString().slice(0, 10);
+}
+
+// Muestra dd-mm-aaaa
+function formatDMY(fechaStr) {
+  const d = parseDate(fechaStr);
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const yyyy = d.getFullYear();
+  return `${dd}-${mm}-${yyyy}`;
 }
 
 function diasEntre(a, b) {
@@ -174,7 +182,6 @@ function solicitarVacaciones() {
   }
 
   const vacaciones = obtenerVacaciones();
-
   if (haySolapamiento(inicio, fin, vacaciones)) {
     alert("Esas fechas ya están adjudicadas.");
     return;
@@ -229,8 +236,8 @@ function renderTablaColaborador() {
     html += `
       <tr class="${ocupado ? "fila-ocupado" : "fila-libre"}">
         <td>${idx + 1}</td>
-        <td>${sem.inicio}</td>
-        <td>${sem.fin}</td>
+        <td>${formatDMY(sem.inicio)}</td>
+        <td>${formatDMY(sem.fin)}</td>
         <td>
           ${
             ocupado
@@ -288,6 +295,12 @@ function guardarEmailCoordinador() {
   localStorage.setItem(LS_EMAIL_COORDINADOR, email);
 }
 
+function toggleCambioClave() {
+  const panel = document.getElementById("cambioClavePanel");
+  if (!panel) return;
+  panel.classList.toggle("hidden");
+}
+
 function cambiarClaveCoordinador() {
   const claveActual = document.getElementById("claveActual").value.trim();
   const claveNueva = document.getElementById("claveNueva").value.trim();
@@ -335,48 +348,61 @@ function cambiarAnioCoordinador() {
 function renderTablaCoordinador() {
   const contenedor = document.getElementById("tablaCoordinador");
   const anio = parseInt(document.getElementById("anioCoordinador").value, 10);
-  const vacaciones = obtenerVacaciones().filter(v => {
-    return parseDate(v.inicio).getFullYear() === anio;
-  });
+  const todas = obtenerVacaciones();
+  const vacaciones = todas.filter(v => parseDate(v.inicio).getFullYear() === anio);
+
+  const otrosAnios = Array.from(
+    new Set(
+      todas
+        .map(v => parseDate(v.inicio).getFullYear())
+        .filter(y => y !== anio)
+    )
+  );
+
+  let html = "";
 
   if (vacaciones.length === 0) {
-    contenedor.innerHTML = "<p>No hay vacaciones registradas para este año.</p>";
-    return;
+    html += "<p>No hay vacaciones registradas para este año.</p>";
+  } else {
+    html += `
+      <table>
+        <thead>
+          <tr>
+            <th>Colaborador</th>
+            <th>Legajo</th>
+            <th>Inicio</th>
+            <th>Fin</th>
+            <th>Días</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+
+    vacaciones.forEach(v => {
+      const dias = diasEntre(v.inicio, v.fin) + 1;
+      html += `
+        <tr class="fila-ocupado">
+          <td>${v.nombre}</td>
+          <td>${v.legajo}</td>
+          <td>${formatDMY(v.inicio)}</td>
+          <td>${formatDMY(v.fin)}</td>
+          <td>${dias}</td>
+          <td class="acciones">
+            <button onclick="borrarVacaciones('${v.id}')">Borrar</button>
+            <button onclick="moverVacaciones('${v.id}')">Mover</button>
+          </td>
+        </tr>
+      `;
+    });
+
+    html += "</tbody></table>";
   }
 
-  let html = `
-    <table>
-      <thead>
-        <tr>
-          <th>Colaborador</th>
-          <th>Legajo</th>
-          <th>Inicio</th>
-          <th>Fin</th>
-          <th>Días</th>
-          <th>Acciones</th>
-        </tr>
-      </thead>
-      <tbody>
-  `;
+  if (otrosAnios.length > 0) {
+    html += `<p class="aviso-otros-anios">Hay vacaciones solicitadas en: ${otrosAnios.join(", ")}.</p>`;
+  }
 
-  vacaciones.forEach(v => {
-    const dias = diasEntre(v.inicio, v.fin) + 1;
-    html += `
-      <tr class="fila-ocupado">
-        <td>${v.nombre}</td>
-        <td>${v.legajo}</td>
-        <td>${v.inicio}</td>
-        <td>${v.fin}</td>
-        <td>${dias}</td>
-        <td class="acciones">
-          <button onclick="borrarVacaciones('${v.id}')">Borrar</button>
-          <button onclick="moverVacaciones('${v.id}')">Mover</button>
-        </td>
-      </tr>
-    `;
-  });
-
-  html += "</tbody></table>";
   contenedor.innerHTML = html;
 }
 
@@ -390,7 +416,7 @@ function borrarVacaciones(id) {
   renderTablaColaborador();
 }
 
-// Mover con prompts pero mostrando finales en múltiplos de 7 días
+// Mover con prompts, proponiendo finales en múltiplos de 7 días
 function moverVacaciones(id) {
   const vacaciones = obtenerVacaciones();
   const vac = vacaciones.find(v => v.id === id);
@@ -420,7 +446,7 @@ function moverVacaciones(id) {
   let mensaje = "Elegí la duración (todas son múltiplos de 7 días):\n";
   opciones.forEach((fin, index) => {
     const diasOpcion = (index + 1) * 7;
-    mensaje += `${index + 1}) ${diasOpcion} días: ${nuevoInicio} → ${fin}\n`;
+    mensaje += `${index + 1}) ${diasOpcion} días: ${formatDMY(nuevoInicio)} → ${formatDMY(fin)}\n`;
   });
 
   const elegido = prompt(mensaje, "1");
@@ -435,7 +461,7 @@ function moverVacaciones(id) {
   }
 
   const ok = confirm(
-    `¿Confirmar mover las vacaciones de ${vac.nombre} a ${nuevoInicio} → ${nuevoFin}?`
+    `¿Confirmar mover las vacaciones de ${vac.nombre} a ${formatDMY(nuevoInicio)} → ${formatDMY(nuevoFin)}?`
   );
   if (!ok) return;
 
@@ -456,9 +482,12 @@ function moverVacaciones(id) {
 function renderSemanasCoordinador() {
   const cont = document.getElementById("semanasCoordinador");
   const select = document.getElementById("anioCoordinador");
+  const label = document.getElementById("anioSemanasLabel");
   if (!cont || !select) return;
 
   const anio = parseInt(select.value, 10);
+  if (label) label.textContent = `(${anio})`;
+
   const semanas = obtenerSemanasDelAnio(anio);
   const vacaciones = obtenerVacaciones();
 
@@ -482,7 +511,7 @@ function renderSemanasCoordinador() {
            data-semana-fin="${sem.fin}"
            ${ocupada ? `data-vac-id="${vacSemana.id}" draggable="true"` : ""}>
         <div class="semana-titulo">Sem ${index + 1}</div>
-        <div>${sem.inicio} → ${sem.fin}</div>
+        <div>${formatDMY(sem.inicio)} → ${formatDMY(sem.fin)}</div>
         <div class="semana-nombre">
           ${ocupada ? vacSemana.nombre : "Libre"}
         </div>
@@ -518,7 +547,7 @@ function prepararDragAndDropSemanas() {
       const targetVacId = sem.getAttribute("data-vac-id");
       if (targetVacId) {
         dragVacId = null;
-        return; // no se mueve sobre semana ocupada
+        return;
       }
 
       const semanaInicio = sem.getAttribute("data-semana-inicio");
@@ -550,7 +579,7 @@ function moverVacacionesADesdeDrag(id, nuevoInicioSemana) {
   }
 
   const ok = confirm(
-    `¿Mover las vacaciones de ${vac.nombre} del ${vac.inicio}–${vac.fin} a ${inicioNuevo}–${finNuevo}?`
+    `¿Mover las vacaciones de ${vac.nombre} del ${formatDMY(vac.inicio)}–${formatDMY(vac.fin)} a ${formatDMY(inicioNuevo)}–${formatDMY(finNuevo)}?`
   );
   if (!ok) return;
 
@@ -576,9 +605,11 @@ function enviarNotificacionAlCoordinador(vacacion) {
     return;
   }
 
-  // 🚨 Prototipo: solo se muestra en consola, NO envía mails reales
+  // Prototipo: solo se muestra en consola, NO envía mails reales
   console.log(
-    `Notificar a ${email}: nueva solicitud de ${vacacion.nombre} (${vacacion.legajo}) del ${vacacion.inicio} al ${vacacion.fin}.`
+    `Notificar a ${email}: nueva solicitud de ${vacacion.nombre} (${vacacion.legajo}) del ${formatDMY(
+      vacacion.inicio
+    )} al ${formatDMY(vacacion.fin)}.`
   );
 }
 
