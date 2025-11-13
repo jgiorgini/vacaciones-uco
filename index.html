@@ -5,117 +5,167 @@
   <meta name="viewport" content="width=device-width,initial-scale=1.0" />
   <title>Gestión de Vacaciones UCO</title>
   <link rel="stylesheet" href="styles.css" />
+
+  <!-- EmailJS (para envío real de correos) -->
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <script>
+    // ⚠️ COMPLETAR SOLO SI QUERÉS ENVIAR MAILS REALES
+    // 1. Crear cuenta en https://www.emailjs.com
+    // 2. Crear un Service, un Template y obtener tu Public Key
+    // 3. Completar estos datos y poner EMAILJS_ENABLED = true en app.js
+    (function () {
+      // emailjs.init({ publicKey: "TU_PUBLIC_KEY_AQUI" });
+    })();
+  </script>
 </head>
 <body>
-  <h1>Gestión de Vacaciones – Unidad Coronaria (UCO)</h1>
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <div class="app-title">Gestión de Vacaciones – UCO</div>
+      <div class="app-subtitle">Unidad Coronaria · Hospital Alemán</div>
+    </div>
+    <div class="topbar-right">
+      <button class="btn-ghost" id="darkModeButton" onclick="toggleDarkMode()">Modo oscuro</button>
+    </div>
+  </header>
 
-  <div class="mode-buttons">
-    <button onclick="setMode('colaborador')">Soy colaborador</button>
-    <button onclick="setMode('coordinador')">Soy coordinador</button>
-  </div>
-
-  <!-- ===========================
-        PANEL COLABORADOR
-  ============================ -->
-  <section id="colaboradorPanel" class="panel hidden">
-    <h2>Solicitud de vacaciones</h2>
-    <div class="form-grid">
-      <label>Nombre y apellido</label>
-      <input id="colaboradorNombre" type="text" />
-
-      <label>Número de legajo</label>
-      <input id="colaboradorLegajo" type="text" />
-
-      <label>Fecha de inicio (lunes)</label>
-      <input id="fechaInicio" type="date" />
-
-      <label>Fecha de fin (domingo)</label>
-      <input id="fechaFin" type="date" />
+  <main>
+    <div class="mode-buttons">
+      <button onclick="setMode('colaborador')">Soy colaborador</button>
+      <button onclick="setMode('coordinador')">Soy coordinador</button>
     </div>
 
-    <button onclick="solicitarVacaciones()">Enviar solicitud</button>
+    <!-- ===========================
+          PANEL COLABORADOR
+    ============================ -->
+    <section id="colaboradorPanel" class="panel hidden">
+      <h2>Solicitud de vacaciones</h2>
+      <div class="form-grid">
+        <label>Nombre y apellido</label>
+        <input id="colaboradorNombre" type="text" />
 
-    <h3>Disponibilidad de semanas</h3>
-    <div class="year-selector">
-      <label>Año:</label>
-      <select id="anioColaborador" onchange="cambiarAnioColaborador()"></select>
-    </div>
+        <label>Número de legajo</label>
+        <input id="colaboradorLegajo" type="text" />
 
-    <div id="tablaColaborador"></div>
-  </section>
+        <label>Fecha de inicio (lunes)</label>
+        <input id="fechaInicio" type="date" />
 
-  <!-- ===========================
-        LOGIN COORDINADOR
-  ============================ -->
-  <section id="coordinadorLogin" class="panel hidden">
-    <h2>Acceso coordinador</h2>
-    <label>Clave de acceso</label>
-    <input id="clave" type="password" />
-    <button onclick="loginCoordinador()">Ingresar</button>
-    <p class="ayuda-login">
-      La primera vez que ingreses, la clave que escribas quedará guardada como clave del coordinador en este equipo.
-    </p>
-  </section>
+        <label>Fecha de fin (domingo)</label>
+        <input id="fechaFin" type="date" />
+      </div>
 
-  <!-- ===========================
-        PANEL COORDINADOR
-  ============================ -->
-  <section id="coordinadorPanel" class="panel hidden">
-    <h2>Panel del coordinador UCO</h2>
+      <button onclick="solicitarVacaciones()">Enviar solicitud</button>
 
-    <div class="coordinador-layout">
-      <!-- COLUMNA IZQUIERDA -->
-      <div class="coordinador-left">
-        <h3>Notificaciones</h3>
-<button class="btn-secundario" onclick="toggleCambioEmail()">Cambiar correo de notificaciones</button>
-<div id="cambioEmailPanel" class="panel-secundario hidden">
-  <div class="form-grid">
-    <label>Correo para notificaciones</label>
-    <input id="emailCoordinador" type="email" />
-  </div>
-  <button onclick="guardarEmailCoordinador()">Guardar correo</button>
-</div>
+      <h3>Disponibilidad de semanas</h3>
+      <div class="year-selector">
+        <label>Año:</label>
+        <select id="anioColaborador" onchange="cambiarAnioColaborador()"></select>
+      </div>
 
-<h3>Seguridad</h3>
-<button class="btn-secundario" onclick="toggleCambioClave()">Cambiar clave del coordinador</button>
-<div id="cambioClavePanel" class="panel-secundario hidden">
-  <div class="form-grid">
-    <label>Clave actual</label>
-    <input id="claveActual" type="password" />
+      <div id="tablaColaborador"></div>
+    </section>
 
-    <label>Nueva clave</label>
-    <input id="claveNueva" type="password" />
+    <!-- ===========================
+          LOGIN COORDINADOR
+    ============================ -->
+    <section id="coordinadorLogin" class="panel hidden">
+      <h2>Acceso coordinador</h2>
+      <label>Clave de acceso</label>
+      <input id="clave" type="password" />
+      <button onclick="loginCoordinador()">Ingresar</button>
+      <p class="ayuda-login">
+        La primera vez que ingreses, la clave que escribas quedará guardada como clave del coordinador en este equipo.
+      </p>
+    </section>
 
-    <label>Repetir nueva clave</label>
-    <input id="claveNueva2" type="password" />
-  </div>
-  <button onclick="cambiarClaveCoordinador()">Guardar nueva clave</button>
-  
+    <!-- ===========================
+          PANEL COORDINADOR
+    ============================ -->
+    <section id="coordinadorPanel" class="panel hidden">
+      <h2>Panel del coordinador UCO</h2>
+
+      <div class="coordinador-layout">
+        <!-- COLUMNA IZQUIERDA -->
+        <div class="coordinador-left">
+          <h3>Notificaciones</h3>
+          <button class="btn-secundario" onclick="toggleCambioEmail()">Cambiar correo de notificaciones</button>
+          <div id="cambioEmailPanel" class="panel-secundario hidden">
+            <div class="form-grid">
+              <label>Correo para notificaciones</label>
+              <input id="emailCoordinador" type="email" />
+            </div>
+            <button onclick="guardarEmailCoordinador()">Guardar correo</button>
           </div>
-          <button onclick="cambiarClaveCoordinador()">Guardar nueva clave</button>
+
+          <h3>Seguridad</h3>
+          <button class="btn-secundario" onclick="toggleCambioClave()">Cambiar clave del coordinador</button>
+          <div id="cambioClavePanel" class="panel-secundario hidden">
+            <div class="form-grid">
+              <label>Clave actual</label>
+              <input id="claveActual" type="password" />
+
+              <label>Nueva clave</label>
+              <input id="claveNueva" type="password" />
+
+              <label>Repetir nueva clave</label>
+              <input id="claveNueva2" type="password" />
+            </div>
+            <button onclick="cambiarClaveCoordinador()">Guardar nueva clave</button>
+          </div>
+
+          <h3>Vacaciones registradas</h3>
+          <div class="year-selector">
+            <label>Año:</label>
+            <select id="anioCoordinador" onchange="cambiarAnioCoordinador()"></select>
+          </div>
+
+          <div class="export-buttons">
+            <button onclick="exportarVacacionesCSV()">Exportar a Excel (CSV)</button>
+            <button onclick="imprimirVacaciones()">Imprimir / PDF</button>
+          </div>
+
+          <div id="tablaCoordinador"></div>
+
+          <h3>Historial de cambios</h3>
+          <div id="historialPanel"></div>
         </div>
 
-        <h3>Vacaciones registradas</h3>
-        <div class="year-selector">
-          <label>Año:</label>
-          <select id="anioCoordinador" onchange="cambiarAnioCoordinador()"></select>
+        <!-- COLUMNA DERECHA -->
+        <div class="coordinador-right">
+          <h3>Semanas del año <span id="anioSemanasLabel"></span></h3>
+          <div id="semanasCoordinador"></div>
+          <p class="ayuda-dnd">
+            Arrastrá una semana <strong>ocupada</strong> y soltala sobre una semana <strong>libre</strong> para mover las vacaciones.
+          </p>
+
+          <h3>Calendario mensual</h3>
+          <div class="calendar-controls">
+            <select id="mesCalendario" onchange="renderCalendarioMensual()"></select>
+            <select id="anioCalendario" onchange="renderCalendarioMensual()"></select>
+          </div>
+          <div id="calendarioMensual"></div>
         </div>
-
-        <div id="tablaCoordinador"></div>
       </div>
+    </section>
+  </main>
 
-      <!-- COLUMNA DERECHA -->
-      <div class="coordinador-right">
-        <h3>Semanas del año <span id="anioSemanasLabel"></span></h3>
-        <div id="semanasCoordinador"></div>
-        <p class="ayuda-dnd">
-          Arrastrá una semana <strong>ocupada</strong> y soltala sobre una semana <strong>libre</strong> para mover las vacaciones.
-        </p>
-      </div>
+  <!-- FOOTER LOGOS -->
+  <footer class="app-footer">
+    <div class="footer-logos">
+      <img
+        src="https://opticagascon.com.ar/wp-content/uploads/2019/04/hospital-aleman.png"
+        alt="Hospital Alemán Buenos Aires"
+        class="logo-ha"
+      />
+      <img
+        src="https://gemellihospital.com/wp-content/uploads/2021/01/jci_badge-1.png"
+        alt="Joint Commission International"
+        class="logo-jci"
+      />
     </div>
-  </section>
+  </footer>
 
   <script src="app.js"></script>
 </body>
 </html>
-
