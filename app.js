@@ -2,16 +2,16 @@
 //   CONFIGURACIÓN BÁSICA
 // =============================
 
-// Clave simple para prototipo (en producción se movería a backend)
-const CLAVE_COORDINADOR = "UCI2025";
-
 // Claves de LocalStorage
 const LS_VACACIONES = "uci_vacaciones";
 const LS_EMAIL_COORDINADOR = "uci_email_coordinador";
+const LS_CLAVE_COORDINADOR = "uci_clave_coordinador";
 
-// Años que se mostrarán en los selectores
 const ANIO_INICIAL = new Date().getFullYear();
 const ANIO_FINAL = ANIO_INICIAL + 1;
+
+// Para drag & drop
+let dragVacId = null;
 
 // =============================
 //       UTILIDADES
@@ -30,7 +30,6 @@ function generarId() {
 }
 
 function parseDate(str) {
-  // str = "YYYY-MM-DD"
   return new Date(str + "T00:00:00");
 }
 
@@ -45,15 +44,14 @@ function diasEntre(a, b) {
 
 function esLunes(fechaStr) {
   const d = parseDate(fechaStr);
-  return d.getDay() === 1; // 1 = lunes
+  return d.getDay() === 1;
 }
 
 function esDomingo(fechaStr) {
   const d = parseDate(fechaStr);
-  return d.getDay() === 0; // 0 = domingo
+  return d.getDay() === 0;
 }
 
-// Devuelve true si el rango [inicio, fin] se solapa con [a.inicio, a.fin]
 function haySolapamiento(inicio, fin, lista, excluirId = null) {
   const inicioDate = parseDate(inicio);
   const finDate = parseDate(fin);
@@ -62,7 +60,6 @@ function haySolapamiento(inicio, fin, lista, excluirId = null) {
     if (excluirId && v.id === excluirId) return false;
     const vInicio = parseDate(v.inicio);
     const vFin = parseDate(v.fin);
-    // Se solapan si NO se cumple que uno termina antes de que empiece el otro
     return !(finDate < vInicio || inicioDate > vFin);
   });
 }
@@ -71,17 +68,14 @@ function haySolapamiento(inicio, fin, lista, excluirId = null) {
 //    GENERACIÓN DE SEMANAS
 // =============================
 
-// Devuelve todas las semanas (lunes–domingo) del año dado
 function obtenerSemanasDelAnio(anio) {
   const semanas = [];
+  let d = new Date(anio, 0, 1);
 
-  // 1) Buscar el primer lunes del año
-  let d = new Date(anio, 0, 1); // 1 de enero
   while (d.getDay() !== 1) {
     d.setDate(d.getDate() + 1);
   }
 
-  // 2) Ir saltando de 7 en 7 hasta fin de año
   while (d.getFullYear() === anio) {
     const inicio = new Date(d);
     const fin = new Date(d);
@@ -116,13 +110,11 @@ function setMode(modo) {
   }
 }
 
-// Rellena los select de años en ambos paneles
 function inicializarSelectAnios() {
   const selectColab = document.getElementById("anioColaborador");
   const selectCoord = document.getElementById("anioCoordinador");
   if (!selectColab || !selectCoord) return;
 
-  // Evitar duplicar opciones si ya están
   if (selectColab.options.length === 0) {
     for (let anio = ANIO_INICIAL; anio <= ANIO_FINAL; anio++) {
       const opt1 = document.createElement("option");
@@ -139,7 +131,6 @@ function inicializarSelectAnios() {
     selectCoord.value = ANIO_INICIAL;
   }
 
-  // Cargar email de coordinador si existe
   const emailGuardado = localStorage.getItem(LS_EMAIL_COORDINADOR) || "";
   const inputEmail = document.getElementById("emailCoordinador");
   if (inputEmail && !inputEmail.value) {
@@ -200,7 +191,6 @@ function solicitarVacaciones() {
   vacaciones.push(nueva);
   guardarVacaciones(vacaciones);
 
-  // Notificación "fake" por ahora (prototipo estático)
   enviarNotificacionAlCoordinador(nueva);
 
   alert("Solicitud registrada. El coordinador será notificado.");
@@ -215,7 +205,6 @@ function limpiarFormularioColaborador() {
   document.getElementById("fechaFin").value = "";
 }
 
-// Tabla que ve el colaborador: solo LIBRE / OCUPADO, sin nombres
 function renderTablaColaborador() {
   const contenedor = document.getElementById("tablaColaborador");
   const anio = parseInt(document.getElementById("anioColaborador").value, 10);
@@ -262,12 +251,29 @@ function renderTablaColaborador() {
 // =============================
 
 function loginCoordinador() {
-  const claveIng = document.getElementById("clave").value;
-  if (claveIng === CLAVE_COORDINADOR) {
+  const claveIng = document.getElementById("clave").value.trim();
+  if (!claveIng) {
+    alert("Ingresá una clave.");
+    return;
+  }
+
+  const claveGuardada = localStorage.getItem(LS_CLAVE_COORDINADOR);
+
+  if (!claveGuardada) {
+    localStorage.setItem(LS_CLAVE_COORDINADOR, claveIng);
+    alert("Clave creada. Guardala en un lugar seguro.");
     document.getElementById("coordinadorLogin").classList.add("hidden");
     document.getElementById("coordinadorPanel").classList.remove("hidden");
     inicializarSelectAnios();
-    renderTablaCoordinador();
+    cambiarAnioCoordinador();
+    return;
+  }
+
+  if (claveIng === claveGuardada) {
+    document.getElementById("coordinadorLogin").classList.add("hidden");
+    document.getElementById("coordinadorPanel").classList.remove("hidden");
+    inicializarSelectAnios();
+    cambiarAnioCoordinador();
   } else {
     alert("Clave incorrecta.");
   }
@@ -280,6 +286,50 @@ function loginCoordinador() {
 function guardarEmailCoordinador() {
   const email = document.getElementById("emailCoordinador").value.trim();
   localStorage.setItem(LS_EMAIL_COORDINADOR, email);
+}
+
+function cambiarClaveCoordinador() {
+  const claveActual = document.getElementById("claveActual").value.trim();
+  const claveNueva = document.getElementById("claveNueva").value.trim();
+  const claveNueva2 = document.getElementById("claveNueva2").value.trim();
+
+  const claveGuardada = localStorage.getItem(LS_CLAVE_COORDINADOR);
+
+  if (!claveGuardada) {
+    alert("Todavía no hay una clave guardada. Ingresá primero por el login.");
+    return;
+  }
+
+  if (!claveActual || !claveNueva || !claveNueva2) {
+    alert("Completá todos los campos de seguridad.");
+    return;
+  }
+
+  if (claveActual !== claveGuardada) {
+    alert("La clave actual no es correcta.");
+    return;
+  }
+
+  if (claveNueva !== claveNueva2) {
+    alert("La nueva clave y su repetición no coinciden.");
+    return;
+  }
+
+  if (claveNueva.length < 4) {
+    alert("La nueva clave debe tener al menos 4 caracteres.");
+    return;
+  }
+
+  localStorage.setItem(LS_CLAVE_COORDINADOR, claveNueva);
+  document.getElementById("claveActual").value = "";
+  document.getElementById("claveNueva").value = "";
+  document.getElementById("claveNueva2").value = "";
+  alert("Clave actualizada correctamente.");
+}
+
+function cambiarAnioCoordinador() {
+  renderTablaCoordinador();
+  renderSemanasCoordinador();
 }
 
 function renderTablaCoordinador() {
@@ -336,46 +386,58 @@ function borrarVacaciones(id) {
   const nuevas = vacaciones.filter(v => v.id !== id);
   guardarVacaciones(nuevas);
   renderTablaCoordinador();
-  renderTablaColaborador(); // actualizar vista colaborador
+  renderSemanasCoordinador();
+  renderTablaColaborador();
 }
 
+// Mover con prompts pero mostrando finales en múltiplos de 7 días
 function moverVacaciones(id) {
   const vacaciones = obtenerVacaciones();
   const vac = vacaciones.find(v => v.id === id);
   if (!vac) return;
 
   const nuevoInicio = prompt(
-    "Nueva fecha de inicio (lunes) en formato AAAA-MM-DD:",
+    "Nueva fecha de inicio (debe ser LUNES, formato AAAA-MM-DD):",
     vac.inicio
   );
   if (!nuevoInicio) return;
 
-  const nuevoFin = prompt(
-    "Nueva fecha de fin (domingo) en formato AAAA-MM-DD:",
-    vac.fin
-  );
-  if (!nuevoFin) return;
-
   if (!esLunes(nuevoInicio)) {
-    alert("Las vacaciones deben comenzar un LUNES.");
+    alert("La nueva fecha de inicio debe ser un LUNES.");
     return;
   }
 
-  if (!esDomingo(nuevoFin)) {
-    alert("Las vacaciones deben finalizar un DOMINGO.");
-    return;
+  const diasOriginales = diasEntre(vac.inicio, vac.fin) + 1;
+  const cantidadSemanas = Math.max(1, Math.round(diasOriginales / 7));
+
+  const opciones = [];
+  for (let i = 1; i <= cantidadSemanas; i++) {
+    const finDate = parseDate(nuevoInicio);
+    finDate.setDate(finDate.getDate() + i * 7 - 1);
+    opciones.push(formatoISO(finDate));
   }
 
-  const dias = diasEntre(nuevoInicio, nuevoFin) + 1;
-  if (dias <= 0 || dias % 7 !== 0) {
-    alert("Solo se permiten períodos de 7, 14, 21 días, etc.");
-    return;
-  }
+  let mensaje = "Elegí la duración (todas son múltiplos de 7 días):\n";
+  opciones.forEach((fin, index) => {
+    const diasOpcion = (index + 1) * 7;
+    mensaje += `${index + 1}) ${diasOpcion} días: ${nuevoInicio} → ${fin}\n`;
+  });
+
+  const elegido = prompt(mensaje, "1");
+  const idx = parseInt(elegido, 10) - 1;
+  if (isNaN(idx) || idx < 0 || idx >= opciones.length) return;
+
+  const nuevoFin = opciones[idx];
 
   if (haySolapamiento(nuevoInicio, nuevoFin, vacaciones, id)) {
-    alert("Esas fechas ya están adjudicadas.");
+    alert("Esas fechas se superponen con otras vacaciones.");
     return;
   }
+
+  const ok = confirm(
+    `¿Confirmar mover las vacaciones de ${vac.nombre} a ${nuevoInicio} → ${nuevoFin}?`
+  );
+  if (!ok) return;
 
   vac.inicio = nuevoInicio;
   vac.fin = nuevoFin;
@@ -383,11 +445,126 @@ function moverVacaciones(id) {
 
   alert("Vacaciones actualizadas.");
   renderTablaCoordinador();
+  renderSemanasCoordinador();
   renderTablaColaborador();
 }
 
 // =============================
-//  NOTIFICACIÓN "EMAIL" (FAKE)
+//  PANEL DE SEMANAS (COORD.)
+// =============================
+
+function renderSemanasCoordinador() {
+  const cont = document.getElementById("semanasCoordinador");
+  const select = document.getElementById("anioCoordinador");
+  if (!cont || !select) return;
+
+  const anio = parseInt(select.value, 10);
+  const semanas = obtenerSemanasDelAnio(anio);
+  const vacaciones = obtenerVacaciones();
+
+  let html = '<div class="semanas-grid">';
+
+  semanas.forEach((sem, index) => {
+    let vacSemana = null;
+
+    for (const v of vacaciones) {
+      if (haySolapamiento(sem.inicio, sem.fin, [v])) {
+        vacSemana = v;
+        break;
+      }
+    }
+
+    const ocupada = !!vacSemana;
+
+    html += `
+      <div class="semana ${ocupada ? "semana-ocupada" : "semana-libre"}"
+           data-semana-inicio="${sem.inicio}"
+           data-semana-fin="${sem.fin}"
+           ${ocupada ? `data-vac-id="${vacSemana.id}" draggable="true"` : ""}>
+        <div class="semana-titulo">Sem ${index + 1}</div>
+        <div>${sem.inicio} → ${sem.fin}</div>
+        <div class="semana-nombre">
+          ${ocupada ? vacSemana.nombre : "Libre"}
+        </div>
+      </div>
+    `;
+  });
+
+  html += "</div>";
+  cont.innerHTML = html;
+
+  prepararDragAndDropSemanas();
+}
+
+function prepararDragAndDropSemanas() {
+  const semanas = document.querySelectorAll(".semana");
+
+  semanas.forEach(sem => {
+    sem.addEventListener("dragstart", e => {
+      const vacId = sem.getAttribute("data-vac-id");
+      if (!vacId) return;
+      dragVacId = vacId;
+      e.dataTransfer.effectAllowed = "move";
+    });
+
+    sem.addEventListener("dragover", e => {
+      e.preventDefault();
+    });
+
+    sem.addEventListener("drop", e => {
+      e.preventDefault();
+      if (!dragVacId) return;
+
+      const targetVacId = sem.getAttribute("data-vac-id");
+      if (targetVacId) {
+        dragVacId = null;
+        return; // no se mueve sobre semana ocupada
+      }
+
+      const semanaInicio = sem.getAttribute("data-semana-inicio");
+      if (!semanaInicio) {
+        dragVacId = null;
+        return;
+      }
+
+      moverVacacionesADesdeDrag(dragVacId, semanaInicio);
+      dragVacId = null;
+    });
+  });
+}
+
+function moverVacacionesADesdeDrag(id, nuevoInicioSemana) {
+  const vacaciones = obtenerVacaciones();
+  const vac = vacaciones.find(v => v.id === id);
+  if (!vac) return;
+
+  const dias = diasEntre(vac.inicio, vac.fin) + 1;
+  const inicioNuevo = nuevoInicioSemana;
+  const finDate = parseDate(inicioNuevo);
+  finDate.setDate(finDate.getDate() + dias - 1);
+  const finNuevo = formatoISO(finDate);
+
+  if (haySolapamiento(inicioNuevo, finNuevo, vacaciones, id)) {
+    alert("No se puede mover: se superpone con otras vacaciones.");
+    return;
+  }
+
+  const ok = confirm(
+    `¿Mover las vacaciones de ${vac.nombre} del ${vac.inicio}–${vac.fin} a ${inicioNuevo}–${finNuevo}?`
+  );
+  if (!ok) return;
+
+  vac.inicio = inicioNuevo;
+  vac.fin = finNuevo;
+  guardarVacaciones(vacaciones);
+
+  renderTablaCoordinador();
+  renderSemanasCoordinador();
+  renderTablaColaborador();
+}
+
+// =============================
+//  NOTIFICACIÓN (PROTOTIPO)
 // =============================
 
 function enviarNotificacionAlCoordinador(vacacion) {
@@ -399,19 +576,17 @@ function enviarNotificacionAlCoordinador(vacacion) {
     return;
   }
 
-  // Prototipo estático: solo mostramos un mensaje/console.
+  // 🚨 Prototipo: solo se muestra en consola, NO envía mails reales
   console.log(
     `Notificar a ${email}: nueva solicitud de ${vacacion.nombre} (${vacacion.legajo}) del ${vacacion.inicio} al ${vacacion.fin}.`
   );
-  // En una versión con backend o con EmailJS, acá se haría el envío real.
 }
 
 // =============================
-//   INICIALIZACIÓN INICIAL
+//   INICIALIZACIÓN
 // =============================
 
 window.addEventListener("DOMContentLoaded", () => {
-  // Por defecto, no mostramos ningún panel hasta que elijan modo
-  // Si querés, podés arrancar en modo colaborador:
+  // Podés descomentar esto si querés entrar directo como colaborador:
   // setMode('colaborador');
 });
