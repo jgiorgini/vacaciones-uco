@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-  <title>Gestión de Vacaciones UCI</title>
+  <title>Gestión de Vacaciones UCO</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <h1>Gestión de Vacaciones - Unidad de Cuidados Intensivos</h1>
+  <h1>Gestión de Vacaciones – Unidad Coronaria (UCO)</h1>
 
   <div class="mode-buttons">
     <button onclick="setMode('colaborador')">Soy colaborador</button>
@@ -20,26 +20,27 @@
   <section id="colaboradorPanel" class="panel hidden">
     <h2>Solicitud de vacaciones</h2>
     <div class="form-grid">
-      <label for="colaboradorNombre">Nombre y apellido</label>
+      <label>Nombre y apellido</label>
       <input id="colaboradorNombre" type="text" />
 
-      <label for="colaboradorLegajo">Número de legajo</label>
+      <label>Número de legajo</label>
       <input id="colaboradorLegajo" type="text" />
 
-      <label for="fechaInicio">Fecha de inicio (lunes)</label>
+      <label>Fecha de inicio (lunes)</label>
       <input id="fechaInicio" type="date" />
 
-      <label for="fechaFin">Fecha de fin (domingo)</label>
+      <label>Fecha de fin (domingo)</label>
       <input id="fechaFin" type="date" />
     </div>
 
     <button onclick="solicitarVacaciones()">Enviar solicitud</button>
 
-    <h3>Disponibilidad por semanas</h3>
+    <h3>Disponibilidad de semanas</h3>
     <div class="year-selector">
-      <label for="anioColaborador">Año:</label>
+      <label>Año:</label>
       <select id="anioColaborador" onchange="cambiarAnioColaborador()"></select>
     </div>
+
     <div id="tablaColaborador"></div>
   </section>
 
@@ -48,43 +49,61 @@
   ============================ -->
   <section id="coordinadorLogin" class="panel hidden">
     <h2>Acceso coordinador</h2>
-    <label for="clave">Clave de acceso</label>
+    <label>Clave de acceso</label>
     <input id="clave" type="password" />
     <button onclick="loginCoordinador()">Ingresar</button>
+    <p class="ayuda-login">
+      La primera vez que ingreses, la clave que escribas quedará guardada como clave del coordinador en este equipo.
+    </p>
   </section>
 
   <!-- ===========================
         PANEL COORDINADOR
   ============================ -->
   <section id="coordinadorPanel" class="panel hidden">
-    <h2>Panel del coordinador</h2>
+    <h2>Panel del coordinador UCO</h2>
 
-    <div class="form-grid">
-      <label for="emailCoordinador">Correo para notificaciones</label>
-      <input id="emailCoordinador" type="email" onchange="guardarEmailCoordinador()" />
+    <div class="coordinador-layout">
+      <!-- COLUMNA IZQUIERDA -->
+      <div class="coordinador-left">
+        <div class="form-grid">
+          <label>Correo para notificaciones</label>
+          <input id="emailCoordinador" type="email" onchange="guardarEmailCoordinador()" />
+        </div>
+
+        <h3>Seguridad</h3>
+        <div class="form-grid">
+          <label>Clave actual</label>
+          <input id="claveActual" type="password" />
+
+          <label>Nueva clave</label>
+          <input id="claveNueva" type="password" />
+
+          <label>Repetir nueva clave</label>
+          <input id="claveNueva2" type="password" />
+        </div>
+        <button onclick="cambiarClaveCoordinador()">Cambiar clave</button>
+
+        <h3>Vacaciones registradas</h3>
+        <div class="year-selector">
+          <label>Año:</label>
+          <select id="anioCoordinador" onchange="cambiarAnioCoordinador()"></select>
+        </div>
+
+        <div id="tablaCoordinador"></div>
+      </div>
+
+      <!-- COLUMNA DERECHA -->
+      <div class="coordinador-right">
+        <h3>Semanas del año</h3>
+        <div id="semanasCoordinador"></div>
+        <p class="ayuda-dnd">
+          Arrastrá una semana <strong>ocupada</strong> y soltala sobre una semana <strong>libre</strong> para mover las vacaciones.
+        </p>
+      </div>
     </div>
-    <h3>Seguridad</h3>
-    <div class="form-grid">
-      <label>Clave actual</label>
-      <input id="claveActual" type="password" />
-
-      <label>Nueva clave</label>
-      <input id="claveNueva" type="password" />
-
-      <label>Repetir nueva clave</label>
-      <input id="claveNueva2" type="password" />
-    </div>
-    <button onclick="cambiarClaveCoordinador()">Cambiar clave</button>
-
-    <h3>Vacaciones registradas</h3>
-    <div class="year-selector">
-      <label for="anioCoordinador">Año:</label>
-      <select id="anioCoordinador" onchange="renderTablaCoordinador()"></select>
-    </div>
-    <div id="tablaCoordinador"></div>
   </section>
 
   <script src="app.js"></script>
 </body>
 </html>
-
