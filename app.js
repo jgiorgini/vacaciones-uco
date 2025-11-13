@@ -5,8 +5,8 @@
 const LS_VACACIONES = "uci_vacaciones";
 const LS_EMAIL_COORDINADOR = "uci_email_coordinador";
 const LS_CLAVE_COORDINADOR = "uci_clave_coordinador";
-const LS_HISTORIAL = "uci_historial";
-const LS_DARK_MODE = "uci_dark_mode";
+const LS_HISTORIAL = "uci_historial";      // si todavía no lo tenés, podés omitirlo
+const LS_DARK_MODE = "uci_dark_mode";      // si lo usás para el modo oscuro
 
 const ANIO_INICIAL = new Date().getFullYear();
 const ANIO_FINAL = ANIO_INICIAL + 1;
@@ -14,10 +14,10 @@ const ANIO_FINAL = ANIO_INICIAL + 1;
 // Para drag & drop
 let dragVacId = null;
 
-// EmailJS (se activa cuando completes datos y pongas EMAILJS_ENABLED = true)
-const EMAILJS_ENABLED = true; // ⚠️ cambiar a true cuando configures EmailJS
-const EMAILJS_SERVICE_ID = "service_lo_que_te_dio_emailjs";
-const EMAILJS_TEMPLATE_ID = "template_lo_que_te_dio_emailjs";
+// EmailJS
+const EMAILJS_ENABLED = true;                            // 👈 ACTIVADO
+const EMAILJS_SERVICE_ID = "service_j40wbu5";            // 👈 tu Service ID
+const EMAILJS_TEMPLATE_ID = "template_l3was5t";          // 👈 tu Template ID
 // =============================
 //       UTILIDADES
 // =============================
@@ -954,9 +954,10 @@ function enviarNotificacionAlCoordinador(vacacion) {
       })
       .catch(err => {
         console.error("EmailJS error:", err);
+        alert("La solicitud se registró, pero hubo un problema enviando el mail al coordinador.");
       });
   } else {
-    // Fallback: solo consola
+    // Fallback: solo consola si EmailJS no está habilitado
     console.log(
       `Notificar a ${email}: nueva solicitud de ${vacacion.nombre} (${vacacion.legajo}) del ${formatDMY(
         vacacion.inicio
@@ -964,6 +965,7 @@ function enviarNotificacionAlCoordinador(vacacion) {
     );
   }
 }
+
 
 
 // =============================
@@ -1002,4 +1004,5 @@ window.addEventListener("DOMContentLoaded", () => {
   // si querés que arranque ya con un modo:
   // setMode('colaborador');
 });
+
 
