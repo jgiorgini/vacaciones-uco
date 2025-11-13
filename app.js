@@ -289,10 +289,33 @@ function loginCoordinador() {
 // =============================
 //      PANEL COORDINADOR
 // =============================
+function toggleCambioEmail() {
+  const panel = document.getElementById("cambioEmailPanel");
+  if (!panel) return;
 
+  panel.classList.toggle("hidden");
+
+  // Si lo acabo de abrir, precargo el mail guardado
+  if (!panel.classList.contains("hidden")) {
+    const emailGuardado = localStorage.getItem(LS_EMAIL_COORDINADOR) || "";
+    const input = document.getElementById("emailCoordinador");
+    if (input && !input.value) {
+      input.value = emailGuardado;
+    }
+  }
+}
 function guardarEmailCoordinador() {
-  const email = document.getElementById("emailCoordinador").value.trim();
+  const input = document.getElementById("emailCoordinador");
+  if (!input) return;
+
+  const email = input.value.trim();
+  if (!email || !email.includes("@")) {
+    alert("Ingresá un correo válido.");
+    return;
+  }
+
   localStorage.setItem(LS_EMAIL_COORDINADOR, email);
+  alert("Correo de notificaciones actualizado.");
 }
 
 function toggleCambioClave() {
@@ -621,3 +644,4 @@ window.addEventListener("DOMContentLoaded", () => {
   // Podés descomentar esto si querés entrar directo como colaborador:
   // setMode('colaborador');
 });
+
