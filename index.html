@@ -7,14 +7,13 @@
   <link rel="stylesheet" href="styles.css" />
 
   <!-- EmailJS (para envío real de correos) -->
-<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<script>
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<script>
-  (function () {
-    emailjs.init({ publicKey: "KNub58AfJ9QwRiNBW" });
-  })();
-</script>
+  <script>
+    (function () {
+      // Public key de tu cuenta EmailJS
+      emailjs.init({ publicKey: "KNub58AfJ9QwRiNBW" });
+    })();
+  </script>
 </head>
 <body>
   <!-- TOPBAR -->
@@ -47,10 +46,12 @@
         <input id="colaboradorLegajo" type="text" />
 
         <label>Fecha de inicio (lunes)</label>
-<input id="fechaInicio" type="date" />
+        <!-- 👇 Aca VA el calendario nativo del navegador -->
+        <input id="fechaInicio" type="date" />
 
-<label>Fecha de fin (domingo)</label>
-<input id="fechaFin" type="date" />
+        <label>Fecha de fin (domingo)</label>
+        <!-- 👇 También con calendario -->
+        <input id="fechaFin" type="date" />
       </div>
 
       <button onclick="solicitarVacaciones()">Enviar solicitud</button>
@@ -149,18 +150,12 @@
   </main>
 
   <!-- FOOTER LOGOS -->
- <footer class="app-footer">
-  <div class="footer-logos">
-    <img 
-      src="img/logo-aleman-jci.jpg"
-      alt="Hospital Alemán · Joint Commission International"
-      class="logo-banner"
-    />
-
+  <footer class="app-footer">
+    <div class="footer-logos">
       <img
-        src="https://gemellihospital.com/wp-content/uploads/2021/01/jci_badge-1.png"
-        alt="Joint Commission International"
-        class="logo-jci"
+        src="img/logo aleman jci.jpg"
+        alt="Hospital Alemán · Joint Commission International"
+        class="logo-banner"
       />
     </div>
   </footer>
@@ -168,9 +163,3 @@
   <script src="app.js"></script>
 </body>
 </html>
-
-
-
-
-
-
