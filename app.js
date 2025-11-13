@@ -5,8 +5,8 @@
 const LS_VACACIONES = "uci_vacaciones";
 const LS_EMAIL_COORDINADOR = "uci_email_coordinador";
 const LS_CLAVE_COORDINADOR = "uci_clave_coordinador";
-const LS_HISTORIAL = "uci_historial";      // si todavía no lo tenés, podés omitirlo
-const LS_DARK_MODE = "uci_dark_mode";      // si lo usás para el modo oscuro
+const LS_HISTORIAL = "uci_historial";
+const LS_DARK_MODE = "uci_dark_mode";
 
 const ANIO_INICIAL = new Date().getFullYear();
 const ANIO_FINAL = ANIO_INICIAL + 1;
@@ -15,9 +15,10 @@ const ANIO_FINAL = ANIO_INICIAL + 1;
 let dragVacId = null;
 
 // EmailJS
-const EMAILJS_ENABLED = true;                            // 👈 ACTIVADO
-const EMAILJS_SERVICE_ID = "service_j40wbu5";            // 👈 tu Service ID
-const EMAILJS_TEMPLATE_ID = "template_l3was5t";          // 👈 tu Template ID
+const EMAILJS_ENABLED = true;
+const EMAILJS_SERVICE_ID = "service_j40wbu5";
+const EMAILJS_TEMPLATE_ID = "template_l3was5t";
+
 // =============================
 //       UTILIDADES
 // =============================
@@ -47,7 +48,7 @@ function registrarEvento(tipo, detalle) {
     timestamp: ahora.toISOString()
   };
   const hist = obtenerHistorial();
-  hist.unshift(evento); // último evento arriba
+  hist.unshift(evento);
   guardarHistorial(hist);
 }
 
@@ -747,7 +748,7 @@ function renderCalendarioMensual() {
   const selAnio = document.getElementById("anioCalendario");
   if (!cont || !selMes || !selAnio) return;
 
-  const mes = parseInt(selMes.value, 10); // 0-11
+  const mes = parseInt(selMes.value, 10);   // 0-11
   const anio = parseInt(selAnio.value, 10);
 
   const inicioMes = new Date(anio, mes, 1);
@@ -766,7 +767,6 @@ function renderCalendarioMensual() {
 
   for (let fila = 0; fila < 6; fila++) {
     for (let col = 0; col < 7; col++) {
-      const iso = formatoISO(cursor);
       const esMesActual = cursor.getMonth() === mes;
 
       const vac = vacaciones.find(v => {
@@ -922,7 +922,7 @@ function imprimirVacaciones() {
   w.document.write(html);
   w.document.close();
   w.focus();
-  w.print(); // el usuario puede elegir "Guardar como PDF"
+  w.print();
 }
 
 // =============================
@@ -957,7 +957,6 @@ function enviarNotificacionAlCoordinador(vacacion) {
         alert("La solicitud se registró, pero hubo un problema enviando el mail al coordinador.");
       });
   } else {
-    // Fallback: solo consola si EmailJS no está habilitado
     console.log(
       `Notificar a ${email}: nueva solicitud de ${vacacion.nombre} (${vacacion.legajo}) del ${formatDMY(
         vacacion.inicio
@@ -965,8 +964,6 @@ function enviarNotificacionAlCoordinador(vacacion) {
     );
   }
 }
-
-
 
 // =============================
 //   MODO OSCURO
@@ -1001,8 +998,4 @@ function actualizarTextoBotonModo() {
 
 window.addEventListener("DOMContentLoaded", () => {
   aplicarTemaDesdeStorage();
-  // si querés que arranque ya con un modo:
-  // setMode('colaborador');
 });
-
-
