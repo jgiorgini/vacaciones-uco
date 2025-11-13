@@ -5,12 +5,19 @@
 const LS_VACACIONES = "uci_vacaciones";
 const LS_EMAIL_COORDINADOR = "uci_email_coordinador";
 const LS_CLAVE_COORDINADOR = "uci_clave_coordinador";
+const LS_HISTORIAL = "uci_historial";
+const LS_DARK_MODE = "uci_dark_mode";
 
 const ANIO_INICIAL = new Date().getFullYear();
 const ANIO_FINAL = ANIO_INICIAL + 1;
 
 // Para drag & drop
 let dragVacId = null;
+
+// EmailJS (se activa cuando completes datos y pongas EMAILJS_ENABLED = true)
+const EMAILJS_ENABLED = false; // ⚠️ cambiar a true cuando configures EmailJS
+const EMAILJS_SERVICE_ID = "TU_SERVICE_ID";
+const EMAILJS_TEMPLATE_ID = "TU_TEMPLATE_ID";
 
 // =============================
 //       UTILIDADES
@@ -22,6 +29,27 @@ function obtenerVacaciones() {
 
 function guardarVacaciones(lista) {
   localStorage.setItem(LS_VACACIONES, JSON.stringify(lista));
+}
+
+function obtenerHistorial() {
+  return JSON.parse(localStorage.getItem(LS_HISTORIAL) || "[]");
+}
+
+function guardarHistorial(lista) {
+  localStorage.setItem(LS_HISTORIAL, JSON.stringify(lista));
+}
+
+function registrarEvento(tipo, detalle) {
+  const ahora = new Date();
+  const evento = {
+    id: generarId(),
+    tipo,
+    detalle,
+    timestamp: ahora.toISOString()
+  };
+  const hist = obtenerHistorial();
+  hist.unshift(evento); // último evento arriba
+  guardarHistorial(hist);
 }
 
 function generarId() {
@@ -43,6 +71,16 @@ function formatDMY(fechaStr) {
   const mm = String(d.getMonth() + 1).padStart(2, "0");
   const yyyy = d.getFullYear();
   return `${dd}-${mm}-${yyyy}`;
+}
+
+function formatDateTime(ts) {
+  const d = new Date(ts);
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const yyyy = d.getFullYear();
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mi = String(d.getMinutes()).padStart(2, "0");
+  return `${dd}-${mm}-${yyyy} ${hh}:${mi}`;
 }
 
 function diasEntre(a, b) {
@@ -121,6 +159,8 @@ function setMode(modo) {
 function inicializarSelectAnios() {
   const selectColab = document.getElementById("anioColaborador");
   const selectCoord = document.getElementById("anioCoordinador");
+  const selectAnioCal = document.getElementById("anioCalendario");
+  const selectMesCal = document.getElementById("mesCalendario");
   if (!selectColab || !selectCoord) return;
 
   if (selectColab.options.length === 0) {
@@ -137,6 +177,30 @@ function inicializarSelectAnios() {
     }
     selectColab.value = ANIO_INICIAL;
     selectCoord.value = ANIO_INICIAL;
+  }
+
+  if (selectAnioCal && selectAnioCal.options.length === 0) {
+    for (let anio = ANIO_INICIAL; anio <= ANIO_FINAL; anio++) {
+      const o = document.createElement("option");
+      o.value = anio;
+      o.textContent = anio;
+      selectAnioCal.appendChild(o);
+    }
+    selectAnioCal.value = ANIO_INICIAL;
+  }
+
+  if (selectMesCal && selectMesCal.options.length === 0) {
+    const meses = [
+      "Enero","Febrero","Marzo","Abril","Mayo","Junio",
+      "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"
+    ];
+    meses.forEach((m, idx) => {
+      const o = document.createElement("option");
+      o.value = idx;
+      o.textContent = m;
+      selectMesCal.appendChild(o);
+    });
+    selectMesCal.value = new Date().getMonth();
   }
 
   const emailGuardado = localStorage.getItem(LS_EMAIL_COORDINADOR) || "";
@@ -198,10 +262,17 @@ function solicitarVacaciones() {
   vacaciones.push(nueva);
   guardarVacaciones(vacaciones);
 
+  registrarEvento(
+    "Solicitud",
+    `Solicitud de vacaciones de ${nombre} (legajo ${legajo}) del ${formatDMY(inicio)} al ${formatDMY(fin)}.`
+  );
   enviarNotificacionAlCoordinador(nueva);
 
   alert("Solicitud registrada. El coordinador será notificado.");
   renderTablaColaborador();
+  renderHistorial();
+  renderSemanasCoordinador();
+  renderCalendarioMensual();
   limpiarFormularioColaborador();
 }
 
@@ -273,6 +344,7 @@ function loginCoordinador() {
     document.getElementById("coordinadorPanel").classList.remove("hidden");
     inicializarSelectAnios();
     cambiarAnioCoordinador();
+    renderHistorial();
     return;
   }
 
@@ -281,6 +353,7 @@ function loginCoordinador() {
     document.getElementById("coordinadorPanel").classList.remove("hidden");
     inicializarSelectAnios();
     cambiarAnioCoordinador();
+    renderHistorial();
   } else {
     alert("Clave incorrecta.");
   }
@@ -289,13 +362,13 @@ function loginCoordinador() {
 // =============================
 //      PANEL COORDINADOR
 // =============================
+
 function toggleCambioEmail() {
   const panel = document.getElementById("cambioEmailPanel");
   if (!panel) return;
 
   panel.classList.toggle("hidden");
 
-  // Si lo acabo de abrir, precargo el mail guardado
   if (!panel.classList.contains("hidden")) {
     const emailGuardado = localStorage.getItem(LS_EMAIL_COORDINADOR) || "";
     const input = document.getElementById("emailCoordinador");
@@ -304,6 +377,7 @@ function toggleCambioEmail() {
     }
   }
 }
+
 function guardarEmailCoordinador() {
   const input = document.getElementById("emailCoordinador");
   if (!input) return;
@@ -315,7 +389,9 @@ function guardarEmailCoordinador() {
   }
 
   localStorage.setItem(LS_EMAIL_COORDINADOR, email);
+  registrarEvento("Configuración", `Se actualizó el correo del coordinador a ${email}.`);
   alert("Correo de notificaciones actualizado.");
+  renderHistorial();
 }
 
 function toggleCambioClave() {
@@ -360,12 +436,21 @@ function cambiarClaveCoordinador() {
   document.getElementById("claveActual").value = "";
   document.getElementById("claveNueva").value = "";
   document.getElementById("claveNueva2").value = "";
+  registrarEvento("Configuración", "Se actualizó la clave del coordinador.");
   alert("Clave actualizada correctamente.");
+  renderHistorial();
 }
 
 function cambiarAnioCoordinador() {
   renderTablaCoordinador();
   renderSemanasCoordinador();
+
+  const selectCoord = document.getElementById("anioCoordinador");
+  const selectAnioCal = document.getElementById("anioCalendario");
+  if (selectCoord && selectAnioCal) {
+    selectAnioCal.value = selectCoord.value;
+  }
+  renderCalendarioMensual();
 }
 
 function renderTablaCoordinador() {
@@ -430,13 +515,25 @@ function renderTablaCoordinador() {
 }
 
 function borrarVacaciones(id) {
-  if (!confirm("¿Seguro que querés borrar estas vacaciones?")) return;
   const vacaciones = obtenerVacaciones();
+  const vac = vacaciones.find(v => v.id === id);
+  if (!vac) return;
+
+  if (!confirm("¿Seguro que querés borrar estas vacaciones?")) return;
+
   const nuevas = vacaciones.filter(v => v.id !== id);
   guardarVacaciones(nuevas);
+
+  registrarEvento(
+    "Borrado",
+    `Se eliminaron las vacaciones de ${vac.nombre} (legajo ${vac.legajo}) del ${formatDMY(vac.inicio)} al ${formatDMY(vac.fin)}.`
+  );
+
   renderTablaCoordinador();
   renderSemanasCoordinador();
   renderTablaColaborador();
+  renderCalendarioMensual();
+  renderHistorial();
 }
 
 // Mover con prompts, proponiendo finales en múltiplos de 7 días
@@ -488,14 +585,26 @@ function moverVacaciones(id) {
   );
   if (!ok) return;
 
+  const viejoInicio = vac.inicio;
+  const viejoFin = vac.fin;
+
   vac.inicio = nuevoInicio;
   vac.fin = nuevoFin;
   guardarVacaciones(vacaciones);
+
+  registrarEvento(
+    "Movimiento",
+    `Se movieron las vacaciones de ${vac.nombre} de ${formatDMY(viejoInicio)}–${formatDMY(viejoFin)} a ${formatDMY(
+      nuevoInicio
+    )}–${formatDMY(nuevoFin)} (modo manual).`
+  );
 
   alert("Vacaciones actualizadas.");
   renderTablaCoordinador();
   renderSemanasCoordinador();
   renderTablaColaborador();
+  renderCalendarioMensual();
+  renderHistorial();
 }
 
 // =============================
@@ -602,21 +711,223 @@ function moverVacacionesADesdeDrag(id, nuevoInicioSemana) {
   }
 
   const ok = confirm(
-    `¿Mover las vacaciones de ${vac.nombre} del ${formatDMY(vac.inicio)}–${formatDMY(vac.fin)} a ${formatDMY(inicioNuevo)}–${formatDMY(finNuevo)}?`
+    `¿Mover las vacaciones de ${vac.nombre} del ${formatDMY(vac.inicio)}–${formatDMY(vac.fin)} a ${formatDMY(
+      inicioNuevo
+    )}–${formatDMY(finNuevo)}?`
   );
   if (!ok) return;
+
+  const viejoInicio = vac.inicio;
+  const viejoFin = vac.fin;
 
   vac.inicio = inicioNuevo;
   vac.fin = finNuevo;
   guardarVacaciones(vacaciones);
 
+  registrarEvento(
+    "Movimiento",
+    `Se movieron las vacaciones de ${vac.nombre} de ${formatDMY(viejoInicio)}–${formatDMY(viejoFin)} a ${formatDMY(
+      inicioNuevo
+    )}–${formatDMY(finNuevo)} (drag & drop).`
+  );
+
   renderTablaCoordinador();
   renderSemanasCoordinador();
   renderTablaColaborador();
+  renderCalendarioMensual();
+  renderHistorial();
 }
 
 // =============================
-//  NOTIFICACIÓN (PROTOTIPO)
+//  CALENDARIO MENSUAL
+// =============================
+
+function renderCalendarioMensual() {
+  const cont = document.getElementById("calendarioMensual");
+  const selMes = document.getElementById("mesCalendario");
+  const selAnio = document.getElementById("anioCalendario");
+  if (!cont || !selMes || !selAnio) return;
+
+  const mes = parseInt(selMes.value, 10); // 0-11
+  const anio = parseInt(selAnio.value, 10);
+
+  const inicioMes = new Date(anio, mes, 1);
+  let cursor = new Date(inicioMes);
+  while (cursor.getDay() !== 1) {
+    cursor.setDate(cursor.getDate() - 1);
+  }
+
+  const vacaciones = obtenerVacaciones();
+
+  let html = '<div class="cal-grid">';
+  const diasSemana = ["Lu", "Ma", "Mi", "Ju", "Vi", "Sa", "Do"];
+  diasSemana.forEach(d => {
+    html += `<div class="cal-header">${d}</div>`;
+  });
+
+  for (let fila = 0; fila < 6; fila++) {
+    for (let col = 0; col < 7; col++) {
+      const iso = formatoISO(cursor);
+      const esMesActual = cursor.getMonth() === mes;
+
+      const vac = vacaciones.find(v => {
+        const ini = parseDate(v.inicio);
+        const fin = parseDate(v.fin);
+        return ini <= cursor && cursor <= fin;
+      });
+
+      const clases = ["cal-cell"];
+      if (!esMesActual) clases.push("cal-other-month");
+      if (vac) clases.push("cal-vacaciones");
+
+      html += `<div class="${clases.join(" ")}">`;
+      html += `<div class="cal-num">${esMesActual ? cursor.getDate() : ""}</div>`;
+      if (vac && esMesActual) {
+        html += `<div class="cal-tag">${vac.nombre}</div>`;
+      }
+      html += `</div>`;
+
+      cursor.setDate(cursor.getDate() + 1);
+    }
+  }
+
+  html += "</div>";
+  cont.innerHTML = html;
+}
+
+// =============================
+//  HISTORIAL
+// =============================
+
+function renderHistorial() {
+  const cont = document.getElementById("historialPanel");
+  if (!cont) return;
+
+  const hist = obtenerHistorial();
+  if (hist.length === 0) {
+    cont.innerHTML = "<p>No hay eventos registrados todavía.</p>";
+    return;
+  }
+
+  let html = `
+    <table>
+      <thead>
+        <tr>
+          <th>Fecha / hora</th>
+          <th>Tipo</th>
+          <th>Detalle</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+
+  hist.slice(0, 50).forEach(ev => {
+    html += `
+      <tr>
+        <td>${formatDateTime(ev.timestamp)}</td>
+        <td class="hist-tipo">${ev.tipo}</td>
+        <td>${ev.detalle}</td>
+      </tr>
+    `;
+  });
+
+  html += "</tbody></table>";
+  cont.innerHTML = html;
+}
+
+// =============================
+//  EXPORTAR / IMPRIMIR
+// =============================
+
+function exportarVacacionesCSV() {
+  const todas = obtenerVacaciones();
+  if (todas.length === 0) {
+    alert("No hay vacaciones para exportar.");
+    return;
+  }
+
+  let csv = "Colaborador,Legajo,Inicio,Fin,Dias\n";
+  todas.forEach(v => {
+    const dias = diasEntre(v.inicio, v.fin) + 1;
+    csv += `"${v.nombre}",${v.legajo},${formatDMY(v.inicio)},${formatDMY(v.fin)},${dias}\n`;
+  });
+
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "vacaciones_uco.csv";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function imprimirVacaciones() {
+  const todas = obtenerVacaciones();
+  if (todas.length === 0) {
+    alert("No hay vacaciones para imprimir.");
+    return;
+  }
+
+  let html = `
+    <html>
+    <head>
+      <title>Vacaciones UCO</title>
+      <meta charset="utf-8" />
+      <style>
+        body{font-family:Arial,sans-serif;padding:16px;}
+        h1{text-align:center;margin-bottom:12px;}
+        table{width:100%;border-collapse:collapse;margin-top:10px;}
+        th,td{border:1px solid #999;padding:6px;font-size:12px;}
+        th{background:#eee;}
+      </style>
+    </head>
+    <body>
+      <h1>Vacaciones UCO</h1>
+      <table>
+        <thead>
+          <tr>
+            <th>Colaborador</th>
+            <th>Legajo</th>
+            <th>Inicio</th>
+            <th>Fin</th>
+            <th>Días</th>
+          </tr>
+        </thead>
+        <tbody>
+  `;
+
+  todas.forEach(v => {
+    const dias = diasEntre(v.inicio, v.fin) + 1;
+    html += `
+      <tr>
+        <td>${v.nombre}</td>
+        <td>${v.legajo}</td>
+        <td>${formatDMY(v.inicio)}</td>
+        <td>${formatDMY(v.fin)}</td>
+        <td>${dias}</td>
+      </tr>
+    `;
+  });
+
+  html += `
+        </tbody>
+      </table>
+    </body>
+    </html>
+  `;
+
+  const w = window.open("", "_blank");
+  if (!w) return;
+  w.document.write(html);
+  w.document.close();
+  w.focus();
+  w.print(); // el usuario puede elegir "Guardar como PDF"
+}
+
+// =============================
+//  NOTIFICACIÓN (EMAILJS)
 // =============================
 
 function enviarNotificacionAlCoordinador(vacacion) {
@@ -628,12 +939,58 @@ function enviarNotificacionAlCoordinador(vacacion) {
     return;
   }
 
-  // Prototipo: solo se muestra en consola, NO envía mails reales
-  console.log(
-    `Notificar a ${email}: nueva solicitud de ${vacacion.nombre} (${vacacion.legajo}) del ${formatDMY(
-      vacacion.inicio
-    )} al ${formatDMY(vacacion.fin)}.`
-  );
+  if (EMAILJS_ENABLED && typeof emailjs !== "undefined") {
+    const params = {
+      to_email: email,
+      colaborador: vacacion.nombre,
+      legajo: vacacion.legajo,
+      fecha_inicio: formatDMY(vacacion.inicio),
+      fecha_fin: formatDMY(vacacion.fin)
+    };
+
+    emailjs
+      .send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, params)
+      .then(() => {
+        console.log("EmailJS: notificación enviada correctamente.");
+      })
+      .catch(err => {
+        console.error("EmailJS error:", err);
+      });
+  } else {
+    // fallback: solo consola
+    console.log(
+      `Notificar a ${email}: nueva solicitud de ${vacacion.nombre} (${vacacion.legajo}) del ${formatDMY(
+        vacacion.inicio
+      )} al ${formatDMY(vacacion.fin)}.`
+    );
+  }
+}
+
+// =============================
+//   MODO OSCURO
+// =============================
+
+function aplicarTemaDesdeStorage() {
+  const stored = localStorage.getItem(LS_DARK_MODE);
+  const body = document.body;
+  if (stored === "dark") body.classList.add("dark");
+  else body.classList.remove("dark");
+  actualizarTextoBotonModo();
+}
+
+function toggleDarkMode() {
+  const body = document.body;
+  body.classList.toggle("dark");
+  const modo = body.classList.contains("dark") ? "dark" : "light";
+  localStorage.setItem(LS_DARK_MODE, modo);
+  actualizarTextoBotonModo();
+}
+
+function actualizarTextoBotonModo() {
+  const btn = document.getElementById("darkModeButton");
+  if (!btn) return;
+  const dark = document.body.classList.contains("dark");
+  btn.textContent = dark ? "Modo claro" : "Modo oscuro";
 }
 
 // =============================
@@ -641,7 +998,7 @@ function enviarNotificacionAlCoordinador(vacacion) {
 // =============================
 
 window.addEventListener("DOMContentLoaded", () => {
-  // Podés descomentar esto si querés entrar directo como colaborador:
+  aplicarTemaDesdeStorage();
+  // si querés que arranque ya con un modo:
   // setMode('colaborador');
 });
-
