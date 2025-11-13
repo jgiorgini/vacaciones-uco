@@ -66,23 +66,31 @@
     <div class="coordinador-layout">
       <!-- COLUMNA IZQUIERDA -->
       <div class="coordinador-left">
-        <div class="form-grid">
-          <label>Correo para notificaciones</label>
-          <input id="emailCoordinador" type="email" onchange="guardarEmailCoordinador()" />
-        </div>
+        <h3>Notificaciones</h3>
+<button class="btn-secundario" onclick="toggleCambioEmail()">Cambiar correo de notificaciones</button>
+<div id="cambioEmailPanel" class="panel-secundario hidden">
+  <div class="form-grid">
+    <label>Correo para notificaciones</label>
+    <input id="emailCoordinador" type="email" />
+  </div>
+  <button onclick="guardarEmailCoordinador()">Guardar correo</button>
+</div>
 
-        <h3>Seguridad</h3>
-        <button class="btn-secundario" onclick="toggleCambioClave()">Cambiar clave del coordinador</button>
-        <div id="cambioClavePanel" class="panel-secundario hidden">
-          <div class="form-grid">
-            <label>Clave actual</label>
-            <input id="claveActual" type="password" />
+<h3>Seguridad</h3>
+<button class="btn-secundario" onclick="toggleCambioClave()">Cambiar clave del coordinador</button>
+<div id="cambioClavePanel" class="panel-secundario hidden">
+  <div class="form-grid">
+    <label>Clave actual</label>
+    <input id="claveActual" type="password" />
 
-            <label>Nueva clave</label>
-            <input id="claveNueva" type="password" />
+    <label>Nueva clave</label>
+    <input id="claveNueva" type="password" />
 
-            <label>Repetir nueva clave</label>
-            <input id="claveNueva2" type="password" />
+    <label>Repetir nueva clave</label>
+    <input id="claveNueva2" type="password" />
+  </div>
+  <button onclick="cambiarClaveCoordinador()">Guardar nueva clave</button>
+  
           </div>
           <button onclick="cambiarClaveCoordinador()">Guardar nueva clave</button>
         </div>
@@ -110,3 +118,4 @@
   <script src="app.js"></script>
 </body>
 </html>
+
