@@ -13,7 +13,7 @@ body {
 
 h1 {
   text-align: center;
-  margin-bottom: 20px;
+  margin-bottom: 25px;
 }
 
 .panel {
@@ -21,7 +21,7 @@ h1 {
   border-radius: 10px;
   padding: 20px;
   margin-top: 20px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
 }
 
 .hidden {
@@ -30,9 +30,9 @@ h1 {
 
 .mode-buttons {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   justify-content: center;
-  margin-bottom: 10px;
+  margin-bottom: 15px;
 }
 
 button {
@@ -40,20 +40,20 @@ button {
   border-radius: 999px;
   border: none;
   cursor: pointer;
-  background: #2563eb;
-  color: #ffffff;
+  background: #0066cc;
+  color: white;
   font-weight: 500;
 }
 
 button:hover {
-  background: #1d4ed8;
+  background: #004c99;
 }
 
 .form-grid {
   display: grid;
   grid-template-columns: 1fr 2fr;
   gap: 8px 12px;
-  margin-bottom: 12px;
+  margin-bottom: 15px;
 }
 
 label {
@@ -61,16 +61,12 @@ label {
   align-self: center;
 }
 
-input[type="text"],
-input[type="password"],
-input[type="email"],
-input[type="date"],
+input,
 select {
   width: 100%;
-  padding: 6px 8px;
-  border-radius: 6px;
+  padding: 7px 8px;
   border: 1px solid #d1d5db;
-  font-size: 0.9rem;
+  border-radius: 6px;
 }
 
 .year-selector {
@@ -80,14 +76,13 @@ select {
 table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.9rem;
+  margin-top: 10px;
 }
 
-th,
-td {
-  border: 1px solid #e5e7eb;
-  padding: 6px 8px;
-  text-align: left;
+th, td {
+  border: 1px solid #d1d5db;
+  padding: 8px;
+  font-size: 0.9rem;
 }
 
 th {
@@ -95,16 +90,15 @@ th {
 }
 
 .fila-ocupado {
-  background: #fee2e2;
+  background: #ffe5e5;
 }
 
 .fila-libre {
-  background: #dcfce7;
+  background: #ddffdd;
 }
 
 .badge {
-  display: inline-block;
-  padding: 2px 8px;
+  padding: 3px 8px;
   border-radius: 999px;
   font-size: 0.75rem;
   font-weight: 600;
@@ -112,16 +106,85 @@ th {
 
 .badge-libre {
   background: #16a34a;
-  color: #f9fafb;
+  color: white;
 }
 
 .badge-ocupado {
   background: #b91c1c;
-  color: #fee2e2;
+  color: white;
 }
 
 .acciones button {
   font-size: 0.75rem;
   padding: 4px 8px;
   margin-right: 4px;
+}
+
+.ayuda-login {
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin-top: 8px;
+}
+
+/* Layout coordinador */
+
+.coordinador-layout {
+  display: flex;
+  gap: 16px;
+}
+
+.coordinador-left {
+  flex: 2;
+}
+
+.coordinador-right {
+  flex: 1.5;
+}
+
+/* Panel de semanas */
+
+.semanas-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.semana {
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 6px;
+  font-size: 0.8rem;
+  background: #f9fafb;
+  min-width: 120px;
+}
+
+.semana-ocupada {
+  background: #fee2e2;
+  cursor: grab;
+}
+
+.semana-libre {
+  background: #dcfce7;
+}
+
+.semana-titulo {
+  font-weight: 600;
+}
+
+.semana-nombre {
+  font-size: 0.75rem;
+}
+
+.ayuda-dnd {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-top: 6px;
+}
+
+/* Responsive */
+
+@media (max-width: 768px) {
+  .coordinador-layout {
+    flex-direction: column;
+  }
 }
