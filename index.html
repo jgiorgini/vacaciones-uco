@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>Gestión de Vacaciones UCI</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <h1>Gestión de Vacaciones - Unidad de Cuidados Intensivos</h1>
+
+  <div class="mode-buttons">
+    <button onclick="setMode('colaborador')">Soy colaborador</button>
+    <button onclick="setMode('coordinador')">Soy coordinador</button>
+  </div>
+
+  <!-- ===========================
+        PANEL COLABORADOR
+  ============================ -->
+  <section id="colaboradorPanel" class="panel hidden">
+    <h2>Solicitud de vacaciones</h2>
+    <div class="form-grid">
+      <label for="colaboradorNombre">Nombre y apellido</label>
+      <input id="colaboradorNombre" type="text" />
+
+      <label for="colaboradorLegajo">Número de legajo</label>
+      <input id="colaboradorLegajo" type="text" />
+
+      <label for="fechaInicio">Fecha de inicio (lunes)</label>
+      <input id="fechaInicio" type="date" />
+
+      <label for="fechaFin">Fecha de fin (domingo)</label>
+      <input id="fechaFin" type="date" />
+    </div>
+
+    <button onclick="solicitarVacaciones()">Enviar solicitud</button>
+
+    <h3>Disponibilidad por semanas</h3>
+    <div class="year-selector">
+      <label for="anioColaborador">Año:</label>
+      <select id="anioColaborador" onchange="cambiarAnioColaborador()"></select>
+    </div>
+    <div id="tablaColaborador"></div>
+  </section>
+
+  <!-- ===========================
+        LOGIN COORDINADOR
+  ============================ -->
+  <section id="coordinadorLogin" class="panel hidden">
+    <h2>Acceso coordinador</h2>
+    <label for="clave">Clave de acceso</label>
+    <input id="clave" type="password" />
+    <button onclick="loginCoordinador()">Ingresar</button>
+  </section>
+
+  <!-- ===========================
+        PANEL COORDINADOR
+  ============================ -->
+  <section id="coordinadorPanel" class="panel hidden">
+    <h2>Panel del coordinador</h2>
+
+    <div class="form-grid">
+      <label for="emailCoordinador">Correo para notificaciones</label>
+      <input id="emailCoordinador" type="email" onchange="guardarEmailCoordinador()" />
+    </div>
+
+    <h3>Vacaciones registradas</h3>
+    <div class="year-selector">
+      <label for="anioCoordinador">Año:</label>
+      <select id="anioCoordinador" onchange="renderTablaCoordinador()"></select>
+    </div>
+    <div id="tablaCoordinador"></div>
+  </section>
+
+  <script src="app.js"></script>
+</body>
+</html>
