@@ -965,6 +965,7 @@ function enviarNotificacionAlCoordinador(vacacion) {
   }
 }
 
+
 // =============================
 //   MODO OSCURO
 // =============================
@@ -999,4 +1000,5 @@ function actualizarTextoBotonModo() {
 window.addEventListener("DOMContentLoaded", () => {
   aplicarTemaDesdeStorage();
 });
+
 
