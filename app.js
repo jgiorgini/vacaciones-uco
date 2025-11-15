@@ -30,9 +30,17 @@ function generarId() {
   return Date.now().toString() + "_" + Math.random().toString(16).slice(2);
 }
 
-function parseDate(str) {
-  // str en formato "AAAA-MM-DD"
-  return new Date(str + "T00:00:00");
+function parseDate(fecha) {
+  if (fecha instanceof Date) return fecha;
+
+  if (typeof fecha === "string") {
+    if (fecha.includes("T")) {
+      return new Date(fecha);
+    }
+    return new Date(fecha + "T00:00:00");
+  }
+
+  return new Date(fecha);
 }
 
 function formatoISO(date) {
@@ -1082,4 +1090,5 @@ function actualizarTextoBotonModo() {
 window.addEventListener("DOMContentLoaded", () => {
   aplicarTemaDesdeStorage();
 });
+
 
