@@ -11,6 +11,8 @@ const LS_CLAVE_COORDINADOR = "uci_clave_coordinador";
 const LS_HISTORIAL = "uci_historial";
 const LS_DARK_MODE = "uci_dark_mode";
 
+const EMAIL_COORDINADOR_POR_DEFECTO = "marumoreira71@gmail.com";
+
 const ANIO_INICIAL = new Date().getFullYear();
 const ANIO_FINAL = ANIO_INICIAL + 1;
 
@@ -1021,10 +1023,18 @@ async function imprimirVacaciones() {
 // =============================
 
 function enviarNotificacionAlCoordinador(vacacion) {
-  const email = localStorage.getItem(LS_EMAIL_COORDINADOR);
+  // 1) Intentamos leer el mail guardado en este navegador
+  let email = localStorage.getItem(LS_EMAIL_COORDINADOR);
+
+  // 2) Si no hay nada guardado, usamos el mail por defecto
+  if (!email) {
+    email = EMAIL_COORDINADOR_POR_DEFECTO;
+  }
+
+  // 3) Si por alguna razón sigue sin haber mail, abortamos
   if (!email) {
     console.log(
-      "No hay email de coordinador configurado. Guardar primero en el panel del coordinador."
+      "No hay email de coordinador configurado (ni local ni por defecto)."
     );
     return;
   }
@@ -1041,7 +1051,7 @@ function enviarNotificacionAlCoordinador(vacacion) {
     emailjs
       .send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, params)
       .then(() => {
-        console.log("EmailJS: notificación enviada correctamente.");
+        console.log("EmailJS: notificación enviada correctamente a", email);
       })
       .catch(err => {
         console.error("EmailJS error:", err);
@@ -1049,7 +1059,7 @@ function enviarNotificacionAlCoordinador(vacacion) {
       });
   } else {
     console.log(
-      `Notificar a ${email}: nueva solicitud de ${vacacion.nombre} (${vacacion.legajo}) del ${formatDMY(
+      `Simulación de mail a ${email}: nueva solicitud de ${vacacion.nombre} (${vacacion.legajo}) del ${formatDMY(
         vacacion.inicio
       )} al ${formatDMY(vacacion.fin)}.`
     );
@@ -1090,5 +1100,6 @@ function actualizarTextoBotonModo() {
 window.addEventListener("DOMContentLoaded", () => {
   aplicarTemaDesdeStorage();
 });
+
 
 
