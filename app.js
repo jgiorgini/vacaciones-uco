@@ -2,7 +2,10 @@
 //   CONFIGURACIÓN BÁSICA
 // =============================
 
-const LS_VACACIONES = "uci_vacaciones";
+// URL de la API (Google Apps Script)
+const API_BASE_URL = "https://script.google.com/macros/s/AKfycbz3fjic8lqzxbjxtNdmDDqSStikNVKPgzTrDxgutE9OJEBFCk-qj3cOMYFyncYklceERQ/exec";
+
+// LocalStorage: configuración local del navegador
 const LS_EMAIL_COORDINADOR = "uci_email_coordinador";
 const LS_CLAVE_COORDINADOR = "uci_clave_coordinador";
 const LS_HISTORIAL = "uci_historial";
@@ -16,47 +19,19 @@ let dragVacId = null;
 
 // EmailJS
 const EMAILJS_ENABLED = true;
-const EMAILJS_SERVICE_ID = "service_qdlp70i";
-const EMAILJS_TEMPLATE_ID = "template_l3was5t";
+const EMAILJS_SERVICE_ID = "service_j40wbu5";    // AJUSTAR con tu Service ID real
+const EMAILJS_TEMPLATE_ID = "template_l3was5t";  // Template ya configurado en EmailJS
 
 // =============================
 //       UTILIDADES
 // =============================
-
-function obtenerVacaciones() {
-  return JSON.parse(localStorage.getItem(LS_VACACIONES) || "[]");
-}
-
-function guardarVacaciones(lista) {
-  localStorage.setItem(LS_VACACIONES, JSON.stringify(lista));
-}
-
-function obtenerHistorial() {
-  return JSON.parse(localStorage.getItem(LS_HISTORIAL) || "[]");
-}
-
-function guardarHistorial(lista) {
-  localStorage.setItem(LS_HISTORIAL, JSON.stringify(lista));
-}
-
-function registrarEvento(tipo, detalle) {
-  const ahora = new Date();
-  const evento = {
-    id: generarId(),
-    tipo,
-    detalle,
-    timestamp: ahora.toISOString()
-  };
-  const hist = obtenerHistorial();
-  hist.unshift(evento);
-  guardarHistorial(hist);
-}
 
 function generarId() {
   return Date.now().toString() + "_" + Math.random().toString(16).slice(2);
 }
 
 function parseDate(str) {
+  // str en formato "AAAA-MM-DD"
   return new Date(str + "T00:00:00");
 }
 
@@ -108,6 +83,77 @@ function haySolapamiento(inicio, fin, lista, excluirId = null) {
     const vFin = parseDate(v.fin);
     return !(finDate < vInicio || inicioDate > vFin);
   });
+}
+
+// =============================
+//      API: VACACIONES
+// =============================
+
+async function apiListarVacaciones(year = null) {
+  try {
+    let url = `${API_BASE_URL}?action=listarVacaciones`;
+    if (year) {
+      url += `&year=${encodeURIComponent(year)}`;
+    }
+    const res = await fetch(url);
+    const data = await res.json();
+    if (!data.ok) {
+      console.error("Error API listarVacaciones:", data.error);
+      return [];
+    }
+    return data.vacaciones || [];
+  } catch (err) {
+    console.error("Error de red API listarVacaciones:", err);
+    return [];
+  }
+}
+
+async function apiCrearVacacion(vac) {
+  const body = new URLSearchParams({
+    action: "crearVacacion",
+    payload: JSON.stringify(vac)
+  });
+  const res = await fetch(API_BASE_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded"
+    },
+    body
+  });
+  const data = await res.json();
+  return data;
+}
+
+async function apiBorrarVacacion(id) {
+  const body = new URLSearchParams({
+    action: "borrarVacacion",
+    payload: JSON.stringify({ id })
+  });
+  const res = await fetch(API_BASE_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded"
+    },
+    body
+  });
+  const data = await res.json();
+  return data;
+}
+
+async function apiMoverVacacion(payload) {
+  const body = new URLSearchParams({
+    action: "moverVacacion",
+    payload: JSON.stringify(payload)
+  });
+  const res = await fetch(API_BASE_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded"
+    },
+    body
+  });
+  const data = await res.json();
+  return data;
 }
 
 // =============================
@@ -218,7 +264,7 @@ function cambiarAnioColaborador() {
   renderTablaColaborador();
 }
 
-function solicitarVacaciones() {
+async function solicitarVacaciones() {
   const nombre = document.getElementById("colaboradorNombre").value.trim();
   const legajo = document.getElementById("colaboradorLegajo").value.trim();
   const inicio = document.getElementById("fechaInicio").value;
@@ -245,35 +291,43 @@ function solicitarVacaciones() {
     return;
   }
 
-  const vacaciones = obtenerVacaciones();
-  if (haySolapamiento(inicio, fin, vacaciones)) {
-    alert("Esas fechas ya están adjudicadas.");
-    return;
-  }
-
   const nueva = {
-    id: generarId(),
     nombre,
     legajo,
     inicio,
     fin
   };
 
-  vacaciones.push(nueva);
-  guardarVacaciones(vacaciones);
+  try {
+    const resultado = await apiCrearVacacion(nueva);
+    if (!resultado.ok) {
+      alert(resultado.error || "No se pudo registrar la solicitud.");
+      return;
+    }
 
-  registrarEvento(
-    "Solicitud",
-    `Solicitud de vacaciones de ${nombre} (legajo ${legajo}) del ${formatDMY(inicio)} al ${formatDMY(fin)}.`
-  );
-  enviarNotificacionAlCoordinador(nueva);
+    registrarEvento(
+      "Solicitud",
+      `Solicitud de vacaciones de ${nombre} (legajo ${legajo}) del ${formatDMY(inicio)} al ${formatDMY(fin)}.`
+    );
 
-  alert("Solicitud registrada. El coordinador será notificado.");
-  renderTablaColaborador();
-  renderHistorial();
-  renderSemanasCoordinador();
-  renderCalendarioMensual();
-  limpiarFormularioColaborador();
+    enviarNotificacionAlCoordinador({
+      nombre,
+      legajo,
+      inicio,
+      fin
+    });
+
+    alert("Solicitud registrada. El coordinador será notificado.");
+    renderTablaColaborador();
+    renderTablaCoordinador();
+    renderSemanasCoordinador();
+    renderCalendarioMensual();
+    renderHistorial();
+    limpiarFormularioColaborador();
+  } catch (err) {
+    console.error("Error al crear vacación:", err);
+    alert("Ocurrió un error al registrar la solicitud.");
+  }
 }
 
 function limpiarFormularioColaborador() {
@@ -283,11 +337,13 @@ function limpiarFormularioColaborador() {
   document.getElementById("fechaFin").value = "";
 }
 
-function renderTablaColaborador() {
+async function renderTablaColaborador() {
   const contenedor = document.getElementById("tablaColaborador");
+  if (!contenedor) return;
+
   const anio = parseInt(document.getElementById("anioColaborador").value, 10);
   const semanas = obtenerSemanasDelAnio(anio);
-  const vacaciones = obtenerVacaciones();
+  const vacaciones = await apiListarVacaciones(); // todas, filtramos por año en solapamiento
 
   let html = `
     <table>
@@ -453,10 +509,12 @@ function cambiarAnioCoordinador() {
   renderCalendarioMensual();
 }
 
-function renderTablaCoordinador() {
+async function renderTablaCoordinador() {
   const contenedor = document.getElementById("tablaCoordinador");
+  if (!contenedor) return;
+
   const anio = parseInt(document.getElementById("anioCoordinador").value, 10);
-  const todas = obtenerVacaciones();
+  const todas = await apiListarVacaciones();
   const vacaciones = todas.filter(v => parseDate(v.inicio).getFullYear() === anio);
 
   const otrosAnios = Array.from(
@@ -514,32 +572,40 @@ function renderTablaCoordinador() {
   contenedor.innerHTML = html;
 }
 
-function borrarVacaciones(id) {
-  const vacaciones = obtenerVacaciones();
-  const vac = vacaciones.find(v => v.id === id);
-  if (!vac) return;
-
+async function borrarVacaciones(id) {
   if (!confirm("¿Seguro que querés borrar estas vacaciones?")) return;
 
-  const nuevas = vacaciones.filter(v => v.id !== id);
-  guardarVacaciones(nuevas);
+  try {
+    const todas = await apiListarVacaciones();
+    const vac = todas.find(v => v.id === id);
 
-  registrarEvento(
-    "Borrado",
-    `Se eliminaron las vacaciones de ${vac.nombre} (legajo ${vac.legajo}) del ${formatDMY(vac.inicio)} al ${formatDMY(vac.fin)}.`
-  );
+    const resultado = await apiBorrarVacacion(id);
+    if (!resultado.ok) {
+      alert(resultado.error || "No se pudo borrar la vacación.");
+      return;
+    }
 
-  renderTablaCoordinador();
-  renderSemanasCoordinador();
-  renderTablaColaborador();
-  renderCalendarioMensual();
-  renderHistorial();
+    if (vac) {
+      registrarEvento(
+        "Borrado",
+        `Se eliminaron las vacaciones de ${vac.nombre} (legajo ${vac.legajo}) del ${formatDMY(vac.inicio)} al ${formatDMY(vac.fin)}.`
+      );
+    }
+
+    renderTablaCoordinador();
+    renderSemanasCoordinador();
+    renderTablaColaborador();
+    renderCalendarioMensual();
+    renderHistorial();
+  } catch (err) {
+    console.error("Error al borrar vacación:", err);
+    alert("Ocurrió un error al borrar las vacaciones.");
+  }
 }
 
-// Mover con prompts, proponiendo finales en múltiplos de 7 días
-function moverVacaciones(id) {
-  const vacaciones = obtenerVacaciones();
-  const vac = vacaciones.find(v => v.id === id);
+async function moverVacaciones(id) {
+  const todas = await apiListarVacaciones();
+  const vac = todas.find(v => v.id === id);
   if (!vac) return;
 
   const nuevoInicio = prompt(
@@ -575,43 +641,42 @@ function moverVacaciones(id) {
 
   const nuevoFin = opciones[idx];
 
-  if (haySolapamiento(nuevoInicio, nuevoFin, vacaciones, id)) {
-    alert("Esas fechas se superponen con otras vacaciones.");
-    return;
+  try {
+    const resultado = await apiMoverVacacion({
+      id: vac.id,
+      nuevoInicio,
+      nuevoFin
+    });
+
+    if (!resultado.ok) {
+      alert(resultado.error || "No se pudo mover la vacación.");
+      return;
+    }
+
+    registrarEvento(
+      "Movimiento",
+      `Se movieron las vacaciones de ${vac.nombre} de ${formatDMY(vac.inicio)}–${formatDMY(vac.fin)} a ${formatDMY(
+        nuevoInicio
+      )}–${formatDMY(nuevoFin)} (modo manual).`
+    );
+
+    alert("Vacaciones actualizadas.");
+    renderTablaCoordinador();
+    renderSemanasCoordinador();
+    renderTablaColaborador();
+    renderCalendarioMensual();
+    renderHistorial();
+  } catch (err) {
+    console.error("Error al mover vacación:", err);
+    alert("Ocurrió un error al mover las vacaciones.");
   }
-
-  const ok = confirm(
-    `¿Confirmar mover las vacaciones de ${vac.nombre} a ${formatDMY(nuevoInicio)} → ${formatDMY(nuevoFin)}?`
-  );
-  if (!ok) return;
-
-  const viejoInicio = vac.inicio;
-  const viejoFin = vac.fin;
-
-  vac.inicio = nuevoInicio;
-  vac.fin = nuevoFin;
-  guardarVacaciones(vacaciones);
-
-  registrarEvento(
-    "Movimiento",
-    `Se movieron las vacaciones de ${vac.nombre} de ${formatDMY(viejoInicio)}–${formatDMY(viejoFin)} a ${formatDMY(
-      nuevoInicio
-    )}–${formatDMY(nuevoFin)} (modo manual).`
-  );
-
-  alert("Vacaciones actualizadas.");
-  renderTablaCoordinador();
-  renderSemanasCoordinador();
-  renderTablaColaborador();
-  renderCalendarioMensual();
-  renderHistorial();
 }
 
 // =============================
 //  PANEL DE SEMANAS (COORD.)
 // =============================
 
-function renderSemanasCoordinador() {
+async function renderSemanasCoordinador() {
   const cont = document.getElementById("semanasCoordinador");
   const select = document.getElementById("anioCoordinador");
   const label = document.getElementById("anioSemanasLabel");
@@ -621,7 +686,7 @@ function renderSemanasCoordinador() {
   if (label) label.textContent = `(${anio})`;
 
   const semanas = obtenerSemanasDelAnio(anio);
-  const vacaciones = obtenerVacaciones();
+  const vacaciones = await apiListarVacaciones();
 
   let html = '<div class="semanas-grid">';
 
@@ -694,9 +759,9 @@ function prepararDragAndDropSemanas() {
   });
 }
 
-function moverVacacionesADesdeDrag(id, nuevoInicioSemana) {
-  const vacaciones = obtenerVacaciones();
-  const vac = vacaciones.find(v => v.id === id);
+async function moverVacacionesADesdeDrag(id, nuevoInicioSemana) {
+  const todas = await apiListarVacaciones();
+  const vac = todas.find(v => v.id === id);
   if (!vac) return;
 
   const dias = diasEntre(vac.inicio, vac.fin) + 1;
@@ -705,44 +770,41 @@ function moverVacacionesADesdeDrag(id, nuevoInicioSemana) {
   finDate.setDate(finDate.getDate() + dias - 1);
   const finNuevo = formatoISO(finDate);
 
-  if (haySolapamiento(inicioNuevo, finNuevo, vacaciones, id)) {
-    alert("No se puede mover: se superpone con otras vacaciones.");
-    return;
+  try {
+    const resultado = await apiMoverVacacion({
+      id: vac.id,
+      nuevoInicio: inicioNuevo,
+      nuevoFin: finNuevo
+    });
+
+    if (!resultado.ok) {
+      alert(resultado.error || "No se pudo mover la vacación.");
+      return;
+    }
+
+    registrarEvento(
+      "Movimiento",
+      `Se movieron las vacaciones de ${vac.nombre} de ${formatDMY(vac.inicio)}–${formatDMY(vac.fin)} a ${formatDMY(
+        inicioNuevo
+      )}–${formatDMY(finNuevo)} (drag & drop).`
+    );
+
+    renderTablaCoordinador();
+    renderSemanasCoordinador();
+    renderTablaColaborador();
+    renderCalendarioMensual();
+    renderHistorial();
+  } catch (err) {
+    console.error("Error al mover vacación (drag):", err);
+    alert("Ocurrió un error al mover las vacaciones.");
   }
-
-  const ok = confirm(
-    `¿Mover las vacaciones de ${vac.nombre} del ${formatDMY(vac.inicio)}–${formatDMY(vac.fin)} a ${formatDMY(
-      inicioNuevo
-    )}–${formatDMY(finNuevo)}?`
-  );
-  if (!ok) return;
-
-  const viejoInicio = vac.inicio;
-  const viejoFin = vac.fin;
-
-  vac.inicio = inicioNuevo;
-  vac.fin = finNuevo;
-  guardarVacaciones(vacaciones);
-
-  registrarEvento(
-    "Movimiento",
-    `Se movieron las vacaciones de ${vac.nombre} de ${formatDMY(viejoInicio)}–${formatDMY(viejoFin)} a ${formatDMY(
-      inicioNuevo
-    )}–${formatDMY(finNuevo)} (drag & drop).`
-  );
-
-  renderTablaCoordinador();
-  renderSemanasCoordinador();
-  renderTablaColaborador();
-  renderCalendarioMensual();
-  renderHistorial();
 }
 
 // =============================
 //  CALENDARIO MENSUAL
 // =============================
 
-function renderCalendarioMensual() {
+async function renderCalendarioMensual() {
   const cont = document.getElementById("calendarioMensual");
   const selMes = document.getElementById("mesCalendario");
   const selAnio = document.getElementById("anioCalendario");
@@ -757,7 +819,7 @@ function renderCalendarioMensual() {
     cursor.setDate(cursor.getDate() - 1);
   }
 
-  const vacaciones = obtenerVacaciones();
+  const vacaciones = await apiListarVacaciones();
 
   let html = '<div class="cal-grid">';
   const diasSemana = ["Lu", "Ma", "Mi", "Ju", "Vi", "Sa", "Do"];
@@ -795,8 +857,29 @@ function renderCalendarioMensual() {
 }
 
 // =============================
-//  HISTORIAL
+//  HISTORIAL (LOCAL)
 // =============================
+
+function obtenerHistorial() {
+  return JSON.parse(localStorage.getItem(LS_HISTORIAL) || "[]");
+}
+
+function guardarHistorial(lista) {
+  localStorage.setItem(LS_HISTORIAL, JSON.stringify(lista));
+}
+
+function registrarEvento(tipo, detalle) {
+  const ahora = new Date();
+  const evento = {
+    id: generarId(),
+    tipo,
+    detalle,
+    timestamp: ahora.toISOString()
+  };
+  const hist = obtenerHistorial();
+  hist.unshift(evento);
+  guardarHistorial(hist);
+}
 
 function renderHistorial() {
   const cont = document.getElementById("historialPanel");
@@ -838,8 +921,8 @@ function renderHistorial() {
 //  EXPORTAR / IMPRIMIR
 // =============================
 
-function exportarVacacionesCSV() {
-  const todas = obtenerVacaciones();
+async function exportarVacacionesCSV() {
+  const todas = await apiListarVacaciones();
   if (todas.length === 0) {
     alert("No hay vacaciones para exportar.");
     return;
@@ -862,8 +945,8 @@ function exportarVacacionesCSV() {
   URL.revokeObjectURL(url);
 }
 
-function imprimirVacaciones() {
-  const todas = obtenerVacaciones();
+async function imprimirVacaciones() {
+  const todas = await apiListarVacaciones();
   if (todas.length === 0) {
     alert("No hay vacaciones para imprimir.");
     return;
@@ -965,7 +1048,6 @@ function enviarNotificacionAlCoordinador(vacacion) {
   }
 }
 
-
 // =============================
 //   MODO OSCURO
 // =============================
@@ -1000,5 +1082,3 @@ function actualizarTextoBotonModo() {
 window.addEventListener("DOMContentLoaded", () => {
   aplicarTemaDesdeStorage();
 });
-
-
