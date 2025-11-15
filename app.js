@@ -19,7 +19,7 @@ let dragVacId = null;
 
 // EmailJS
 const EMAILJS_ENABLED = true;
-const EMAILJS_SERVICE_ID = "service_j40wbu5";    // AJUSTAR con tu Service ID real
+const EMAILJS_SERVICE_ID = "service_qdlp70i";    // AJUSTAR con tu Service ID real
 const EMAILJS_TEMPLATE_ID = "template_l3was5t";  // Template ya configurado en EmailJS
 
 // =============================
@@ -1082,3 +1082,4 @@ function actualizarTextoBotonModo() {
 window.addEventListener("DOMContentLoaded", () => {
   aplicarTemaDesdeStorage();
 });
+
